@@ -129,14 +129,6 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase configuration is handled by the hosting environment
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        let userId;
-
         const defaultImages = [
             'https://placehold.co/400x400/F4B3C2/FFFFFF?text=Memory+1',
             'https://placehold.co/400x400/A7D8DE/FFFFFF?text=Memory+2',
@@ -146,7 +138,6 @@
         const defaultTexts = ["saloni", "love", "gungun"];
 
         const loadingScreen = document.getElementById('loading-screen');
-        const surpriseBtn = document.getElementById('surprise-btn');
         const chatPanel = document.getElementById('chat-panel');
         const chatText = document.getElementById('chat-text');
         const chatSpinner = document.getElementById('chat-spinner');
@@ -154,7 +145,7 @@
         const audioPlayer = document.getElementById('audio-player');
         let audioBlob = null;
         let isSpeaking = false;
-
+        
         const addPhotosBtn = document.getElementById('add-photos-btn');
         const addTextsBtn = document.getElementById('add-texts-btn');
         const removePhotosBtn = document.getElementById('remove-photos-btn');
@@ -177,6 +168,11 @@
         const copyBtn = document.getElementById('copy-btn');
         const copyStatus = document.getElementById('copy-status');
         const closeShareModal = document.getElementById('close-share-modal');
+
+        let app;
+        let db;
+        let auth;
+        let userId;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -480,70 +476,103 @@
             stopSpeaking();
         }
 
-        surpriseBtn.addEventListener('click', async () => {
-            surpriseBtn.disabled = true;
-            surpriseBtn.textContent = 'Generating...';
-            const prompts = [
-                'A whimsical picnic with teddy bears in a sun-drenched meadow, digital art.',
-                'An old lighthouse at sunset, with a friendly ghost waving from the top.',
-                'Two dogs riding a tandem bicycle through a field of glowing mushrooms, photorealistic.',
-                'A cozy reading nook in a futuristic library with holographic books.',
-                'A majestic whale made of stars swimming through a nebula.',
-                'A robot and a squirrel sharing an acorn on a park bench, watercolor style.'
-            ];
-            const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-            const imageUrl = await fetchGeminiImage(randomPrompt);
-            createImagePlane(imageUrl);
-            surpriseBtn.textContent = '✨ Create a New Memory';
-            surpriseBtn.disabled = false;
+        // Event Listeners for UI Buttons
+        document.getElementById('add-photos-btn').addEventListener('click', () => {
+            document.getElementById('upload-modal').classList.remove('hidden', 'opacity-0');
+            document.getElementById('upload-modal').classList.add('flex', 'opacity-100', 'scale-100');
+            document.getElementById('image-upload').value = null;
         });
 
-        speakBtn.addEventListener('click', async () => {
-            if (isSpeaking) {
-                stopSpeaking();
-                return;
-            }
+        document.getElementById('add-texts-btn').addEventListener('click', () => {
+            document.getElementById('text-modal').classList.remove('hidden', 'opacity-0');
+            document.getElementById('text-modal').classList.add('flex', 'opacity-100', 'scale-100');
+            textInputs.forEach(input => input.value = '');
+        });
+
+        document.getElementById('remove-photos-btn').addEventListener('click', async () => {
+            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { images: [] }, { merge: true });
+        });
+
+        document.getElementById('remove-texts-btn').addEventListener('click', async () => {
+            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { texts: [] }, { merge: true });
+        });
+
+        document.getElementById('share-btn').addEventListener('click', () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
+            shareLinkInput.value = shareUrl;
+            shareModal.classList.remove('hidden', 'opacity-0');
+            shareModal.classList.add('flex', 'opacity-100', 'scale-100');
+            copyStatus.classList.add('hidden');
+        });
+
+        document.getElementById('confirm-upload').addEventListener('click', async () => {
+            const files = document.getElementById('image-upload').files;
+            if (files.length !== 4) return;
+            document.getElementById('confirm-upload').textContent = 'Uploading...';
+            document.getElementById('confirm-upload').disabled = true;
             try {
-                isSpeaking = true;
-                speakBtn.textContent = 'Stop Speaking';
-                audioBlob = await fetchGeminiAudio(chatText.textContent);
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audioPlayer.src = audioUrl;
-                audioPlayer.classList.remove('hidden');
-                audioPlayer.play();
-                audioPlayer.onended = () => {
-                    stopSpeaking();
-                };
+                const newImages = [];
+                for (const file of files) {
+                    const base64String = await fileToBase64(file);
+                    newImages.push(base64String);
+                }
+                const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
+                await setDoc(userRef, { images: newImages }, { merge: true });
             } catch (error) {
-                console.error("TTS failed:", error);
-                stopSpeaking();
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-                modal.innerHTML = `<div>Sorry, text-to-speech failed to generate audio.</div>`;
-                document.body.appendChild(modal);
-                setTimeout(() => modal.remove(), 3000);
+                console.error("Error uploading images:", error);
+            } finally {
+                document.getElementById('upload-modal').classList.remove('opacity-100', 'scale-100');
+                document.getElementById('upload-modal').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('upload-modal').classList.add('hidden'), 300);
+                document.getElementById('confirm-upload').textContent = 'Confirm';
+                document.getElementById('confirm-upload').disabled = false;
             }
         });
 
-        function stopSpeaking() {
-            if (!audioPlayer.paused) {
-                audioPlayer.pause();
-                audioPlayer.currentTime = 0;
-            }
-            speakBtn.textContent = '✨ Speak';
-            isSpeaking = false;
+        document.getElementById('confirm-text').addEventListener('click', async () => {
+            const newTexts = textInputs.map(input => input.value.trim()).filter(text => text.length > 0);
+            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { texts: newTexts }, { merge: true });
+            document.getElementById('text-modal').classList.remove('opacity-100', 'scale-100');
+            document.getElementById('text-modal').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('text-modal').classList.add('hidden'), 300);
+        });
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
         }
 
+        // Application initialization
         async function initApp() {
             try {
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+                const firebaseConfig = {
+                    apiKey: "fake-api-key",
+                    authDomain: `${appId}.firebaseapp.com`,
+                    projectId: appId,
+                    storageBucket: `${appId}.appspot.com`,
+                    messagingSenderId: "1234567890",
+                    appId: "1:1234567890:web:abcdef"
+                };
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const sharedUserId = urlParams.get('userId');
-                
+
                 await signInAnonymously(auth);
-                
-                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+
                 userId = sharedUserId || auth.currentUser.uid;
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+                const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
 
                 onSnapshot(userRef, (doc) => {
                     let images = defaultImages;
@@ -568,142 +597,23 @@
                     updateScene(defaultImages, defaultTexts);
                     loadingScreen.classList.add('opacity-0');
                     setTimeout(() => loadingScreen.classList.add('hidden'), 300);
-                    const modal = document.createElement('div');
-                    modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-                    modal.innerHTML = `<div>Could not load dynamic data. Displaying default content.</div>`;
-                    document.body.appendChild(modal);
-                    setTimeout(() => modal.remove(), 3000);
                 });
             } catch (error) {
                 console.error("Error initializing app:", error);
                 loadingScreen.classList.add('opacity-0');
                 setTimeout(() => loadingScreen.classList.add('hidden'), 300);
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-                modal.innerHTML = `<div>Failed to connect to the database. Displaying default content.</div>`;
-                document.body.appendChild(modal);
-                setTimeout(() => modal.remove(), 3000);
             }
         }
         
-        addPhotosBtn.addEventListener('click', () => {
-            uploadModal.classList.remove('hidden', 'opacity-0');
-            uploadModal.classList.add('flex', 'opacity-100', 'scale-100');
-            imageUploadInput.value = null;
-        });
-        
-        imageUploadInput.addEventListener('change', () => {
-            if (imageUploadInput.files.length === 4) {
-                 confirmUploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                 confirmUploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
+        // This is a dummy function as we can't show images in Vercel
+        document.getElementById('add-photos-btn').addEventListener('click', () => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
+            modal.innerHTML = `<div>Sorry, image upload is not supported in this environment.</div>`;
+            document.body.appendChild(modal);
+            setTimeout(() => modal.remove(), 3000);
         });
 
-        cancelUploadBtn.addEventListener('click', () => {
-            uploadModal.classList.remove('opacity-100', 'scale-100');
-            uploadModal.classList.add('opacity-0');
-            setTimeout(() => uploadModal.classList.add('hidden'), 300);
-        });
-        
-        confirmUploadBtn.addEventListener('click', async () => {
-            if (imageUploadInput.files.length !== 4) return;
-            confirmUploadBtn.textContent = 'Uploading...';
-            confirmUploadBtn.disabled = true;
-            try {
-                const newImages = [];
-                for (const file of imageUploadInput.files) {
-                    const base64String = await fileToBase64(file);
-                    newImages.push(base64String);
-                }
-                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-                await setDoc(userRef, { images: newImages, texts: currentTexts }, { merge: true });
-            } catch (error) {
-                console.error("Error uploading images:", error);
-            } finally {
-                uploadModal.classList.remove('opacity-100', 'scale-100');
-                uploadModal.classList.add('opacity-0');
-                setTimeout(() => uploadModal.classList.add('hidden'), 300);
-                confirmUploadBtn.textContent = 'Confirm';
-                confirmUploadBtn.disabled = false;
-            }
-        });
-
-        addTextsBtn.addEventListener('click', () => {
-            textModal.classList.remove('hidden', 'opacity-0');
-            textModal.classList.add('flex', 'opacity-100', 'scale-100');
-            textInputs.forEach(input => input.value = '');
-        });
-
-        textInputs.forEach(input => {
-            input.addEventListener('input', () => {
-                const allFilled = textInputs.every(i => i.value.trim().length > 0);
-                if (allFilled) {
-                    confirmTextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    confirmTextBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            });
-        });
-
-        cancelTextBtn.addEventListener('click', () => {
-            textModal.classList.remove('opacity-100', 'scale-100');
-            textModal.classList.add('opacity-0');
-            setTimeout(() => textModal.classList.add('hidden'), 300);
-        });
-
-        confirmTextBtn.addEventListener('click', async () => {
-            const newTexts = textInputs.map(input => input.value.trim());
-            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { images: currentImages, texts: newTexts }, { merge: true });
-            textModal.classList.remove('opacity-100', 'scale-100');
-            textModal.classList.add('opacity-0');
-            setTimeout(() => textModal.classList.add('hidden'), 300);
-        });
-
-        removePhotosBtn.addEventListener('click', async () => {
-            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { images: [] }, { merge: true });
-        });
-
-        removeTextsBtn.addEventListener('click', async () => {
-            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { texts: [] }, { merge: true });
-        });
-
-        shareBtn.addEventListener('click', async () => {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
-            shareLinkInput.value = shareUrl;
-            shareModal.classList.remove('hidden', 'opacity-0');
-            shareModal.classList.add('flex', 'opacity-100', 'scale-100');
-            copyStatus.classList.add('hidden');
-        });
-        
-        closeShareModal.addEventListener('click', () => {
-            shareModal.classList.remove('opacity-100', 'scale-100');
-            shareModal.classList.add('opacity-0');
-            setTimeout(() => shareModal.classList.add('hidden'), 300);
-        });
-        
-        copyBtn.addEventListener('click', () => {
-            shareLinkInput.select();
-            document.execCommand('copy');
-            copyStatus.classList.remove('hidden');
-        });
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-        
         initApp();
     </script>
 </body>
