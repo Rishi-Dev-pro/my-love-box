@@ -541,7 +541,7 @@
                 
                 await signInAnonymously(auth);
                 
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
                 userId = sharedUserId || auth.currentUser.uid;
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
 
@@ -616,7 +616,7 @@
                     const base64String = await fileToBase64(file);
                     newImages.push(base64String);
                 }
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
                 await setDoc(userRef, { images: newImages, texts: currentTexts }, { merge: true });
             } catch (error) {
@@ -655,7 +655,7 @@
 
         confirmTextBtn.addEventListener('click', async () => {
             const newTexts = textInputs.map(input => input.value.trim());
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
             await setDoc(userRef, { images: currentImages, texts: newTexts }, { merge: true });
             textModal.classList.remove('opacity-100', 'scale-100');
@@ -664,13 +664,13 @@
         });
 
         removePhotosBtn.addEventListener('click', async () => {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
             await setDoc(userRef, { images: [] }, { merge: true });
         });
 
         removeTextsBtn.addEventListener('click', async () => {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
             const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
             await setDoc(userRef, { texts: [] }, { merge: true });
         });
