@@ -1,805 +1,751 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Our Dynamic Love Box — Fixed</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: 'Inter', sans-serif;
-      background: radial-gradient(circle at top left, #fcebeb, #f0e6f2, #f3e9f7);
-    }
-    canvas {
-      display:block;
-      position:absolute;
-      top:0;
-      left:0;
-      width:100vw;
-      height:100vh;
-    }
-    /* small helper to ensure modals appear above canvas */
-    .ui-on-top { z-index: 60; }
-  </style>
-
-  <!-- import map for three (keeps module imports short) -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
-    }
-  }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Dynamic Love Box</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #fcebeb, #f0e6f2, #f3e9f7);
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body class="flex flex-col items-center justify-center h-screen">
 
-  <!-- Loading Screen -->
-  <div id="loading-screen" class="fixed inset-0 bg-gray-100 flex flex-col items-center justify-center ui-on-top transition-opacity duration-300">
-    <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-fuchsia-500"></div>
-    <p class="mt-4 text-gray-600">Loading your love box...</p>
-  </div>
-
-  <!-- Info panel -->
-  <div id="info-panel" class="absolute top-4 left-1/2 -translate-x-1/2 p-4 bg-pink-100/70 backdrop-blur-md rounded-2xl shadow-xl border border-pink-200 ui-on-top">
-    <h1 class="text-2xl font-bold text-pink-700">Our Dynamic Love Box</h1>
-    <p class="text-sm text-pink-600 mt-1">Drag to explore. Click a photo to get a memory.</p>
-  </div>
-
-  <!-- Controls -->
-  <div id="controls-panel" class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 ui-on-top">
-    <button id="add-photos-btn" class="px-6 py-3 bg-fuchsia-500 text-white rounded-full text-sm hover:bg-fuchsia-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50">Add Photos</button>
-    <button id="add-texts-btn" class="px-6 py-3 bg-fuchsia-500 text-white rounded-full text-sm hover:bg-fuchsia-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50">Add Texts</button>
-    <button id="remove-photos-btn" class="px-6 py-3 bg-rose-500 text-white rounded-full text-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-opacity-50">Remove Photos</button>
-    <button id="remove-texts-btn" class="px-6 py-3 bg-rose-500 text-white rounded-full text-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-opacity-50">Remove Texts</button>
-    <button id="share-btn" class="px-6 py-3 bg-green-500 text-white rounded-full text-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Share</button>
-  </div>
-
-  <!-- Chat panel -->
-  <div id="chat-panel" class="absolute right-4 top-1/2 -translate-y-1/2 w-80 max-h-[80vh] overflow-y-auto bg-fuchsia-50/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 transition-all duration-300 transform scale-0 opacity-0 origin-right border border-fuchsia-100 hidden ui-on-top">
-    <h2 class="text-lg font-bold text-fuchsia-800 mb-2">Memory Details</h2>
-    <div id="chat-content" class="text-gray-700 text-sm leading-relaxed space-y-2">
-      <div id="chat-spinner" class="hidden flex items-center justify-center space-x-2">
-        <svg class="animate-spin h-5 w-5 text-fuchsia-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p>Generating memory...</p>
-      </div>
-
-      <p id="chat-text" class="hidden"></p>
-      <div class="flex items-center justify-center mt-4">
-        <button id="speak-btn" class="hidden px-4 py-2 bg-pink-500 text-white rounded-full">✨ Speak</button>
-        <audio id="audio-player" class="hidden" controls></audio>
-      </div>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-gray-100 flex flex-col items-center justify-center z-50 transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-fuchsia-500"></div>
+        <p class="mt-4 text-gray-600">Loading your love box...</p>
     </div>
 
-    <button id="close-chat" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
-      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Upload modal -->
-  <div id="upload-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full transform scale-95 opacity-0 transition-all duration-300">
-      <h3 class="text-lg font-bold mb-4 text-center">Upload Photos (4 total)</h3>
-      <p class="text-sm text-gray-500 mb-4 text-center">All existing photos will be replaced.</p>
-      <input type="file" id="image-upload" multiple accept="image/*" class="w-full mb-4">
-      <div class="flex justify-end gap-4">
-        <button id="cancel-upload" class="px-4 py-2 bg-gray-200 rounded-full">Cancel</button>
-        <button id="confirm-upload" class="px-4 py-2 bg-fuchsia-500 text-white rounded-full opacity-50 cursor-not-allowed">Confirm</button>
-      </div>
+    <!-- Main UI Panels -->
+    <div id="info-panel" class="absolute top-4 left-1/2 -translate-x-1/2 z-10 p-4 bg-pink-100/70 backdrop-blur-md rounded-2xl shadow-xl transition-transform duration-500 scale-100 border border-pink-200">
+        <h1 class="text-2xl font-bold text-pink-700">Our Dynamic Love Box</h1>
+        <p class="text-sm text-pink-600 mt-1">Drag to explore. Click a photo to get a memory.</p>
     </div>
-  </div>
 
-  <!-- Text modal -->
-  <div id="text-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full transform scale-95 opacity-0 transition-all duration-300">
-      <h3 class="text-lg font-bold mb-4 text-center">Enter Texts (3 total)</h3>
-      <p class="text-sm text-gray-500 mb-4 text-center">All existing texts will be replaced.</p>
-      <input type="text" id="text-input-1" placeholder="Text 1" class="w-full px-4 py-2 border rounded-full mb-2">
-      <input type="text" id="text-input-2" placeholder="Text 2" class="w-full px-4 py-2 border rounded-full mb-2">
-      <input type="text" id="text-input-3" placeholder="Text 3" class="w-full px-4 py-2 border rounded-full mb-4">
-      <div class="flex justify-end gap-4">
-        <button id="cancel-text" class="px-4 py-2 bg-gray-200 rounded-full">Cancel</button>
-        <button id="confirm-text" class="px-4 py-2 bg-fuchsia-500 text-white rounded-full opacity-50 cursor-not-allowed">Confirm</button>
-      </div>
+    <div id="controls-panel" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex space-x-4 flex-wrap justify-center gap-2">
+        <button id="add-photos-btn" class="px-6 py-3 bg-fuchsia-500 text-white font-semibold rounded-full shadow-lg hover:bg-fuchsia-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 text-sm">Add Photos</button>
+        <button id="add-texts-btn" class="px-6 py-3 bg-fuchsia-500 text-white font-semibold rounded-full shadow-lg hover:bg-fuchsia-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-opacity-50 text-sm">Add Texts</button>
+        <button id="remove-photos-btn" class="px-6 py-3 bg-rose-500 text-white font-semibold rounded-full shadow-lg hover:bg-rose-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-opacity-50 text-sm">Remove Photos</button>
+        <button id="remove-texts-btn" class="px-6 py-3 bg-rose-500 text-white font-semibold rounded-full shadow-lg hover:bg-rose-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-opacity-50 text-sm">Remove Texts</button>
+        <button id="share-btn" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-full shadow-lg hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-sm">Share</button>
     </div>
-  </div>
 
-  <!-- Share modal -->
-  <div id="share-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full transform scale-95 opacity-0 transition-all duration-300 text-center">
-      <h3 class="text-lg font-bold mb-4">Share Your Love Box!</h3>
-      <p class="text-sm text-gray-600 mb-4">Copy and share this link for people to see your memories.</p>
-      <div class="relative">
-        <input type="text" id="share-link-input" readonly class="w-full px-4 py-2 border rounded-full bg-gray-100 text-sm pr-12" value="">
-        <button id="copy-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v2.25A2.25 2.25 0 0113.5 22.5h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25m8.25-10.5h-2.25a2.25 2.25 0 00-2.25 2.25v2.25m4.5-4.5a.75.75 0 01.75.75v2.25h2.25a.75.75 0 01.75.75v2.25m-4.5-4.5h2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-.75.75h-2.25a.75.75 0 01-.75-.75v-2.25a.75.75 0 01.75-.75z" />
-          </svg>
+    <!-- Info/Chat Panel -->
+    <div id="chat-panel" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-80 max-h-[80vh] overflow-y-auto bg-fuchsia-50/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 transition-all duration-500 transform scale-0 opacity-0 origin-right border border-fuchsia-100 hidden">
+        <h2 class="text-lg font-bold text-fuchsia-800 mb-2">Memory Details</h2>
+        <div id="chat-content" class="text-gray-700 text-sm leading-relaxed space-y-2">
+            <div id="chat-spinner" class="hidden flex items-center justify-center space-x-2">
+                <svg class="animate-spin h-5 w-5 text-fuchsia-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p>Generating memory...</p>
+            </div>
+            <p id="chat-text" class="hidden"></p>
+            <div class="flex items-center justify-center mt-4">
+                <button id="speak-btn" class="hidden px-4 py-2 bg-pink-500 text-white font-semibold rounded-full shadow-lg hover:bg-pink-600 transition-colors duration-200">✨ Speak</button>
+                <audio id="audio-player" class="hidden" controls></audio>
+            </div>
+        </div>
+        <button id="close-chat" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors duration-200">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
         </button>
-      </div>
-      <p id="copy-status" class="text-xs text-green-500 mt-2 hidden">Copied!</p>
-      <button id="close-share-modal" class="px-4 py-2 bg-gray-200 rounded-full mt-4">Close</button>
     </div>
-  </div>
 
-  <!-- Module script: Three.js + Firebase + Gemini logic -->
-  <script type="module">
-  import * as THREE from 'three';
-  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-  import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-  import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Modals -->
+    <div id="upload-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full transform transition-all duration-300 scale-95 opacity-0">
+            <h3 class="text-lg font-bold mb-4 text-center">Upload Photos (4 total)</h3>
+            <p class="text-sm text-gray-500 mb-4 text-center">All existing photos will be replaced.</p>
+            <input type="file" id="image-upload" multiple accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-fuchsia-50 file:text-fuchsia-700 hover:file:bg-fuchsia-100 mb-4">
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-upload" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors">Cancel</button>
+                <button id="confirm-upload" class="px-4 py-2 text-white bg-fuchsia-500 rounded-full hover:bg-fuchsia-600 transition-colors opacity-50 cursor-not-allowed">Confirm</button>
+            </div>
+        </div>
+    </div>
 
-  // App state
-  let app, db, auth;
-  let userId;
-  let currentImages = [];
-  let currentTexts = [];
-  let isSpeaking = false;
-  let audioBlob = null;
+    <div id="text-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full transform transition-all duration-300 scale-95 opacity-0">
+            <h3 class="text-lg font-bold mb-4 text-center">Enter Texts (3 total)</h3>
+            <p class="text-sm text-gray-500 mb-4 text-center">All existing texts will be replaced.</p>
+            <input type="text" id="text-input-1" placeholder="Text 1" class="w-full px-4 py-2 border rounded-full mb-2">
+            <input type="text" id="text-input-2" placeholder="Text 2" class="w-full px-4 py-2 border rounded-full mb-2">
+            <input type="text" id="text-input-3" placeholder="Text 3" class="w-full px-4 py-2 border rounded-full mb-4">
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-text" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors">Cancel</button>
+                <button id="confirm-text" class="px-4 py-2 text-white bg-fuchsia-500 rounded-full hover:bg-fuchsia-600 transition-colors opacity-50 cursor-not-allowed">Confirm</button>
+            </div>
+        </div>
+    </div>
 
-  // Defaults
-  const defaultImages = [
-    'https://placehold.co/400x400/F4B3C2/FFFFFF?text=Memory+1',
-    'https://placehold.co/400x400/A7D8DE/FFFFFF?text=Memory+2',
-    'https://placehold.co/400x400/E8D2AE/FFFFFF?text=Memory+3',
-    'https://placehold.co/400x400/B2C9AB/FFFFFF?text=Memory+4'
-  ];
-  const defaultTexts = ["saloni","love","gungun"];
+    <div id="share-modal" class="fixed inset-0 bg-gray-600 bg-opacity-70 flex items-center justify-center z-50 hidden transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0 text-center">
+            <h3 class="text-lg font-bold mb-4">Share Your Love Box!</h3>
+            <p class="text-sm text-gray-600 mb-4">Copy and share this link for people to see your memories.</p>
+            <div class="relative">
+                <input type="text" id="share-link-input" readonly class="w-full px-4 py-2 border rounded-full bg-gray-100 text-sm pr-12" value="">
+                <button id="copy-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v2.25A2.25 2.25 0 0113.5 22.5h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25m8.25-10.5h-2.25a2.25 2.25 0 00-2.25 2.25v2.25m4.5-4.5a.75.75 0 01.75.75v2.25h2.25a.75.75 0 01.75.75v2.25m-4.5-4.5h2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-.75.75h-2.25a.75.75 0 01-.75-.75v-2.25a.75.75 0 01.75-.75z" />
+                    </svg>
+                </button>
+            </div>
+            <p id="copy-status" class="text-xs text-green-500 mt-2 hidden">Copied!</p>
+            <button id="close-share-modal" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors mt-4">Close</button>
+        </div>
+    </div>
 
-  // DOM refs
-  const loadingScreen = document.getElementById('loading-screen');
-  const chatPanel = document.getElementById('chat-panel');
-  const chatSpinner = document.getElementById('chat-spinner');
-  const chatText = document.getElementById('chat-text');
-  const speakBtn = document.getElementById('speak-btn');
-  const audioPlayer = document.getElementById('audio-player');
-  const addPhotosBtn = document.getElementById('add-photos-btn');
-  const addTextsBtn = document.getElementById('add-texts-btn');
-  const removePhotosBtn = document.getElementById('remove-photos-btn');
-  const removeTextsBtn = document.getElementById('remove-texts-btn');
-  const shareBtn = document.getElementById('share-btn');
-  const uploadModal = document.getElementById('upload-modal');
-  const textModal = document.getElementById('text-modal');
-  const shareModal = document.getElementById('share-modal');
-  const imageUploadInput = document.getElementById('image-upload');
-  const confirmUploadBtn = document.getElementById('confirm-upload');
-  const cancelUploadBtn = document.getElementById('cancel-upload');
-  const textInputs = [
-    document.getElementById('text-input-1'),
-    document.getElementById('text-input-2'),
-    document.getElementById('text-input-3')
-  ];
-  const confirmTextBtn = document.getElementById('confirm-text');
-  const cancelTextBtn = document.getElementById('cancel-text');
-  const shareLinkInput = document.getElementById('share-link-input');
-  const copyBtn = document.getElementById('copy-btn');
-  const copyStatus = document.getElementById('copy-status');
-  const closeShareModal = document.getElementById('close-share-modal');
-  const closeChatBtn = document.getElementById('close-chat');
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // Three.js scene
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  document.body.appendChild(renderer.domElement);
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let currentImages = [];
+        let currentTexts = [];
+        let isSpeaking = false;
+        let audioBlob = null;
 
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;
-  controls.minDistance = 8;
-  controls.maxDistance = 40;
-  camera.position.z = 10;
+        const defaultImages = [
+            'https://placehold.co/400x400/F4B3C2/FFFFFF?text=Memory+1',
+            'https://placehold.co/400x400/A7D8DE/FFFFFF?text=Memory+2',
+            'https://placehold.co/400x400/E8D2AE/FFFFFF?text=Memory+3',
+            'https://placehold.co/400x400/B2C9AB/FFFFFF?text=Memory+4'
+        ];
+        const defaultTexts = ["saloni", "love", "gungun"];
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-  scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-  directionalLight.position.set(5,10,7.5);
-  scene.add(directionalLight);
+        const loadingScreen = document.getElementById('loading-screen');
+        const chatPanel = document.getElementById('chat-panel');
+        const chatText = document.getElementById('chat-text');
+        const chatSpinner = document.getElementById('chat-spinner');
+        const speakBtn = document.getElementById('speak-btn');
+        const audioPlayer = document.getElementById('audio-player');
+        
+        const addPhotosBtn = document.getElementById('add-photos-btn');
+        const addTextsBtn = document.getElementById('add-texts-btn');
+        const removePhotosBtn = document.getElementById('remove-photos-btn');
+        const removeTextsBtn = document.getElementById('remove-texts-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const uploadModal = document.getElementById('upload-modal');
+        const textModal = document.getElementById('text-modal');
+        const shareModal = document.getElementById('share-modal');
+        const imageUploadInput = document.getElementById('image-upload');
+        const confirmUploadBtn = document.getElementById('confirm-upload');
+        const cancelUploadBtn = document.getElementById('cancel-upload');
+        const textInputs = [
+            document.getElementById('text-input-1'),
+            document.getElementById('text-input-2'),
+            document.getElementById('text-input-3')
+        ];
+        const confirmTextBtn = document.getElementById('confirm-text');
+        const cancelTextBtn = document.getElementById('cancel-text');
+        const shareLinkInput = document.getElementById('share-link-input');
+        const copyBtn = document.getElementById('copy-btn');
+        const copyStatus = document.getElementById('copy-status');
+        const closeShareModal = document.getElementById('close-share-modal');
+        const closeChatBtn = document.getElementById('close-chat');
 
-  const boxSize = 10;
-  const boxGeometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
-  const boxMaterial = new THREE.MeshBasicMaterial({ color: 0xffa0c0, transparent:true, opacity:0.15 });
-  const box = new THREE.Mesh(boxGeometry, boxMaterial);
-  scene.add(box);
-  const edges = new THREE.EdgesGeometry(boxGeometry);
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffd0e0 });
-  const wireframe = new THREE.LineSegments(edges, lineMaterial);
-  box.add(wireframe);
-
-  const textureLoader = new THREE.TextureLoader();
-  const imageGroup = new THREE.Group();
-  const textGroup = new THREE.Group();
-  scene.add(imageGroup);
-  scene.add(textGroup);
-
-  // font loader
-  const fontLoader = new FontLoader();
-  let fontLoaded = false;
-  let font = null;
-  fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/fonts/gentilis_regular.typeface.json',
-    loadedFont => {
-      font = loadedFont;
-      fontLoaded = true;
-      // If there are texts waiting, create them now
-      if (currentTexts && currentTexts.length > 0) {
-        currentTexts.forEach(t => createFloatingText(t));
-      }
-    },
-    undefined,
-    err => {
-      console.warn('Font load failed:', err);
-    }
-  );
-
-  // dispose helper
-  function disposeMeshAndResources(mesh) {
-    if (!mesh) return;
-    if (mesh.geometry) mesh.geometry.dispose();
-    if (mesh.material) {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      mats.forEach(mat => {
-        if (mat.map) mat.map.dispose();
-        if (mat.dispose) mat.dispose();
-      });
-    }
-  }
-
-  function updateScene(images, texts) {
-    // clear images
-    [...imageGroup.children].forEach(child => {
-      disposeMeshAndResources(child);
-      imageGroup.remove(child);
-    });
-    // clear texts
-    [...textGroup.children].forEach(child => {
-      disposeMeshAndResources(child);
-      textGroup.remove(child);
-    });
-    // add images
-    images.forEach(url => createImagePlane(url));
-    // add texts (if font loaded)
-    texts.forEach(t => createFloatingText(t));
-  }
-
-  function createImagePlane(url) {
-    const texture = textureLoader.load(url,
-      undefined,
-      undefined,
-      err => console.warn('Texture load failed for', url, err)
-    );
-    const planeGeometry = new THREE.PlaneGeometry(3,3);
-    const planeMaterial = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, metalness:0.1, roughness:0.4 });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.userData.url = url;
-    plane.position.x = (Math.random()-0.5) * (boxSize - 4);
-    plane.position.y = (Math.random()-0.5) * (boxSize - 4);
-    plane.position.z = (Math.random()-0.5) * (boxSize - 4);
-    plane.rotation.x = Math.random() * Math.PI;
-    plane.rotation.y = Math.random() * Math.PI;
-    plane.userData.floatSpeed = 0.5 + Math.random()*0.5;
-    plane.userData.rotationSpeed = (Math.random()-0.5)*0.005;
-    imageGroup.add(plane);
-  }
-
-  function createFloatingText(text) {
-    if (!fontLoaded) return;
-    const textMaterial = new THREE.MeshStandardMaterial({ color: 0x9c27b0 });
-    const textParams = { font, size:0.8, height:0.2, curveSegments:12, bevelEnabled:false };
-    const geometry = new TextGeometry(text, textParams);
-    geometry.computeBoundingBox();
-    const textMesh = new THREE.Mesh(geometry, textMaterial);
-    textMesh.position.x = (Math.random()-0.5)*(boxSize - 4);
-    textMesh.position.y = (Math.random()-0.5)*(boxSize - 4);
-    textMesh.position.z = (Math.random()-0.5)*(boxSize - 4);
-    textMesh.rotation.y = Math.random() * Math.PI;
-    textMesh.userData.floatSpeed = 0.5 + Math.random()*0.5;
-    textMesh.userData.rotationSpeed = (Math.random()-0.5)*0.005;
-    textGroup.add(textMesh);
-  }
-
-  const clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    const elapsedTime = clock.getElapsedTime();
-    box.rotation.y += 0.001;
-    imageGroup.children.forEach(plane => {
-      const speed = plane.userData.floatSpeed || 0.6;
-      plane.position.y += Math.sin(elapsedTime * speed) * 0.002;
-      plane.rotation.z += plane.userData.rotationSpeed || 0.001;
-    });
-    textGroup.children.forEach(textMesh => {
-      const speed = textMesh.userData.floatSpeed || 0.6;
-      textMesh.position.y += Math.sin(elapsedTime * speed) * 0.002;
-      textMesh.rotation.y += textMesh.userData.rotationSpeed || 0.001;
-    });
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  // handle resize
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  // Raycast: attach to canvas only (prevents UI clicks triggering)
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-
-  function onPointerClick(event) {
-    // guard: ignore clicks outside canvas bounding rect
-    const rect = renderer.domElement.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
-
-    // if any modal open, ignore (we don't want to raycast while user interacts with UI)
-    const anyModalOpen = !uploadModal.classList.contains('hidden') || !textModal.classList.contains('hidden') || !shareModal.classList.contains('hidden');
-    if (anyModalOpen) return;
-
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = - ((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObjects(imageGroup.children, true);
-    if (intersects.length > 0) {
-      const clickedPlane = intersects[0].object;
-      const imageUrl = clickedPlane.userData?.url;
-      if (imageUrl) openChatPanel(imageUrl);
-    }
-  }
-  renderer.domElement.addEventListener('pointerdown', onPointerClick, { passive: true });
-
-  // Chat panel behaviors
-  function openChatPanel(imageUrl) {
-    chatPanel.classList.remove('hidden','scale-0','opacity-0');
-    chatPanel.classList.add('flex','scale-100','opacity-100');
-    chatText.classList.add('hidden');
-    speakBtn.classList.add('hidden');
-    audioPlayer.classList.add('hidden');
-    chatSpinner.classList.remove('hidden');
-
-    fetchGeminiTextFromImage(imageUrl).then(generatedText => {
-      chatText.textContent = generatedText;
-      chatSpinner.classList.add('hidden');
-      chatText.classList.remove('hidden');
-      speakBtn.classList.remove('hidden');
-    }).catch(err => {
-      chatSpinner.classList.add('hidden');
-      chatText.textContent = 'Error generating memory: ' + (err?.message || err);
-      chatText.classList.remove('hidden');
-    });
-  }
-
-  function closeChatPanel() {
-    chatPanel.classList.remove('flex','scale-100','opacity-100');
-    chatPanel.classList.add('hidden','scale-0','opacity-0');
-    stopSpeaking();
-  }
-
-  closeChatBtn.addEventListener('click', closeChatPanel);
-
-  function stopSpeaking() {
-    if (audioPlayer && !audioPlayer.paused) {
-      audioPlayer.pause();
-      audioPlayer.currentTime = 0;
-    }
-    isSpeaking = false;
-    if (speakBtn) speakBtn.textContent = '✨ Speak';
-  }
-
-  // Gemini text/image/audio helpers (placeholders if API key missing)
-  async function fetchGeminiTextFromImage(imageUrl) {
-    try {
-      const API_KEY = ""; // <-- Put your key here if available
-      if (!API_KEY) {
-        // graceful fallback
-        return `A warm memory: this photo captures a quiet, happy moment — friends, laughter, and small joys.`;
-      }
-      // If you insert API_KEY, the code below sends the image bytes to Gemini.
-      const resp = await fetch(imageUrl);
-      const blob = await resp.blob();
-      const base64ImageData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      const payload = {
-        contents: [{
-          parts: [
-            { text: "Describe this photo like a memory. Give it a title and a short paragraph." },
-            { inlineData: { mimeType: blob.type, data: base64ImageData } }
-          ]
-        }]
-      };
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
-      const apiResponse = await fetch(apiUrl, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await apiResponse.json();
-      return result?.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate a memory for this image.';
-    } catch (err) {
-      console.error('Gemini text generation error:', err);
-      return 'Error generating memory: ' + (err?.message || err);
-    }
-  }
-
-  async function fetchGeminiAudio(text) {
-    try {
-      const API_KEY = ""; // <-- Put your TTS key here
-      if (!API_KEY) {
-        // Fallback: use a tiny silent WAV blob to avoid throwing (or implement speechSynthesis fallback)
-        // For better UX consider implementing speechSynthesis to produce real audio.
-        return new Blob([new ArrayBuffer(0)], { type: 'audio/wav' });
-      }
-      const response = await fetchWithRetry(async () => {
-        const payload = {
-          contents: [{ parts: [{ text }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } }
-          },
-          model: "gemini-2.5-flash-preview-tts"
-        };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${API_KEY}`;
-        return fetch(apiUrl, {
-          method:'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = false;
+        controls.minDistance = 8;
+        controls.maxDistance = 40;
+        camera.position.z = 10;
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+        const boxSize = 10;
+        const boxGeometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+        const boxMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffa0c0,
+            transparent: true,
+            opacity: 0.15
         });
-      }, 3);
-      const result = await response.json();
-      const part = result?.candidates?.[0]?.content?.parts?.[0];
-      const audioData = part?.inlineData?.data;
-      const mimeType = part?.inlineData?.mimeType;
-      if (audioData && mimeType && mimeType.startsWith('audio/')) {
-        // mimeType might be like "audio/wav;rate=24000"
-        const match = mimeType.match(/rate=(\d+)/);
-        const sampleRate = match ? parseInt(match[1],10) : 44100;
-        const pcmData = base64ToArrayBuffer(audioData);
-        const pcm16 = new Int16Array(pcmData);
-        return pcmToWav(pcm16, sampleRate);
-      } else {
-        throw new Error('Invalid audio response from API.');
-      }
-    } catch (err) {
-      console.error('Gemini audio generation error:', err);
-      throw new Error('Error fetching audio: ' + (err?.message || err));
-    }
-  }
+        const box = new THREE.Mesh(boxGeometry, boxMaterial);
+        scene.add(box);
+        const edges = new THREE.EdgesGeometry(boxGeometry);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffd0e0 });
+        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+        box.add(wireframe);
 
-  async function fetchGeminiImage(prompt) {
-    try {
-      const API_KEY = ""; // <-- Put your Imagen key here
-      if (!API_KEY) {
-        return 'https://placehold.co/400x400/CCCCCC/000000?text=Image+Failed';
-      }
-      const response = await fetchWithRetry(async () => {
-        const payload = { instances: { prompt }, parameters: { sampleCount: 1 } };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
-        return fetch(apiUrl, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
+        const textureLoader = new THREE.TextureLoader();
+        const imageGroup = new THREE.Group();
+        const textGroup = new THREE.Group();
+        scene.add(imageGroup);
+        scene.add(textGroup);
+        
+        const fontLoader = new FontLoader();
+        let fontLoaded = false;
+        let font;
+        fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/fonts/gentilis_regular.typeface.json', function(loadedFont) {
+            font = loadedFont;
+            fontLoaded = true;
+            if (currentTexts.length > 0) updateScene(currentImages, currentTexts);
         });
-      }, 3);
-      const result = await response.json();
-      const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
-      if (!base64Data) throw new Error('No image data in response.');
-      return `data:image/png;base64,${base64Data}`;
-    } catch (err) {
-      console.error('Image generation failed:', err);
-      // show quick modal and return placeholder
-      const modal = document.createElement('div');
-      modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-      modal.innerHTML = `<div>Sorry, image generation failed.</div>`;
-      document.body.appendChild(modal);
-      setTimeout(()=>modal.remove(),3000);
-      return 'https://placehold.co/400x400/CCCCCC/000000?text=Image+Failed';
-    }
-  }
 
-  async function fetchWithRetry(fetcher, retries=3) {
-    for (let i=0;i<=retries;i++) {
-      try {
-        const resp = await fetcher();
-        if (!resp) throw new Error('No response');
-        if (resp.status !== 429) return resp;
-      } catch (err) {
-        console.warn(`Fetch attempt ${i+1} failed:`, err);
-      }
-      if (i < retries) await new Promise(r => setTimeout(r, Math.pow(2,i)*1000));
-    }
-    throw new Error('All fetch attempts failed.');
-  }
-
-  function base64ToArrayBuffer(base64) {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i=0;i<len;i++) bytes[i] = binaryString.charCodeAt(i);
-    return bytes.buffer;
-  }
-
-  // pcm -> wav writer (correct implementation)
-  function pcmToWav(pcm16, sampleRate=44100) {
-    const buffer = new ArrayBuffer(44 + pcm16.length * 2);
-    const view = new DataView(buffer);
-
-    function writeString(view, offset, string) {
-      for (let i=0;i<string.length;i++) view.setUint8(offset + i, string.charCodeAt(i));
-    }
-
-    let offset = 0;
-    writeString(view, offset, 'RIFF'); offset += 4;
-    view.setUint32(offset, 36 + pcm16.length * 2, true); offset += 4;
-    writeString(view, offset, 'WAVE'); offset += 4;
-    writeString(view, offset, 'fmt '); offset += 4;
-    view.setUint32(offset, 16, true); offset += 4;
-    view.setUint16(offset, 1, true); offset += 2;
-    view.setUint16(offset, 1, true); offset += 2;
-    view.setUint32(offset, sampleRate, true); offset += 4;
-    view.setUint32(offset, sampleRate * 2, true); offset += 4;
-    view.setUint16(offset, 2, true); offset += 2;
-    view.setUint16(offset, 16, true); offset += 2;
-    writeString(view, offset, 'data'); offset += 4;
-    view.setUint32(offset, pcm16.length * 2, true); offset += 4;
-
-    let pos = offset;
-    for (let i=0;i<pcm16.length;i++, pos += 2) {
-      view.setInt16(pos, pcm16[i], true);
-    }
-    return new Blob([view], { type: 'audio/wav' });
-  }
-
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = e => reject(e);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // Initialize app + Firestore listener
-  async function initApp() {
-    try {
-      const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-      const firebaseConfig = {
-        apiKey: "fake-api-key",
-        authDomain: `${appId}.firebaseapp.com`,
-        projectId: appId,
-        storageBucket: `${appId}.appspot.com`,
-        messagingSenderId: "1234567890",
-        appId: "1:1234567890:web:abcdef"
-      };
-
-      app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
-      auth = getAuth ? getAuth(app) : null; // safe init if auth present
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const sharedUserId = urlParams.get('userId');
-
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
+        function disposeMeshAndResources(mesh) {
+            if (!mesh) return;
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                mats.forEach(mat => {
+                    if (mat.map) mat.map.dispose();
+                    mat.dispose();
+                });
+            }
         }
-      } catch (err) {
-        console.warn('Auth sign-in failed (continuing):', err);
-      }
 
-      userId = sharedUserId || (auth && auth.currentUser && auth.currentUser.uid) || 'public-demo-user';
-      const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+        function updateScene(images, texts) {
+            [...imageGroup.children].forEach(child => {
+                disposeMeshAndResources(child);
+                imageGroup.remove(child);
+            });
+            [...textGroup.children].forEach(child => {
+                disposeMeshAndResources(child);
+                textGroup.remove(child);
+            });
 
-      onSnapshot(userRef, snap => {
-        let images = defaultImages.slice();
-        let texts = defaultTexts.slice();
-        if (snap.exists && snap.exists()) {
-          const data = snap.data();
-          if (Array.isArray(data.images) && data.images.length > 0) images = data.images;
-          if (Array.isArray(data.texts) && data.texts.length > 0) texts = data.texts;
+            images.forEach(url => createImagePlane(url));
+            texts.forEach(text => createFloatingText(text));
         }
-        currentImages = images;
-        currentTexts = texts;
-        updateScene(currentImages, currentTexts);
-        loadingScreen.classList.add('opacity-0');
-        setTimeout(()=> loadingScreen.classList.add('hidden'), 300);
-      }, err => {
-        console.error('Firestore snapshot failed:', err);
-        updateScene(defaultImages, defaultTexts);
-        loadingScreen.classList.add('opacity-0');
-        setTimeout(()=> loadingScreen.classList.add('hidden'), 300);
-      });
-    } catch (err) {
-      console.error('Error initializing app:', err);
-      updateScene(defaultImages, defaultTexts);
-      loadingScreen.classList.add('opacity-0');
-      setTimeout(()=> loadingScreen.classList.add('hidden'), 300);
-    }
-  }
-  window.addEventListener('load', initApp);
 
-  // UI interactions
+        function createImagePlane(url) {
+            const texture = textureLoader.load(url, undefined, undefined, (err) => {
+                console.warn('Texture load failed for', url, err);
+            });
+            const planeGeometry = new THREE.PlaneGeometry(3, 3);
+            const planeMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                metalness: 0.1,
+                roughness: 0.4
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.userData.url = url;
+            plane.position.x = (Math.random() - 0.5) * (boxSize - 4);
+            plane.position.y = (Math.random() - 0.5) * (boxSize - 4);
+            plane.position.z = (Math.random() - 0.5) * (boxSize - 4);
+            plane.rotation.x = Math.random() * Math.PI;
+            plane.rotation.y = Math.random() * Math.PI;
+            plane.userData.floatSpeed = 0.5 + Math.random() * 0.5;
+            plane.userData.rotationSpeed = (Math.random() - 0.5) * 0.005;
+            imageGroup.add(plane);
+        }
+        
+        function createFloatingText(text) {
+            if (!fontLoaded) return;
+            const textMaterial = new THREE.MeshStandardMaterial({ color: 0x9c27b0 });
+            const textParams = {
+                font: font,
+                size: 0.8,
+                height: 0.2,
+                curveSegments: 12,
+                bevelEnabled: false,
+            };
+            const geometry = new TextGeometry(text, textParams);
+            geometry.computeBoundingBox();
+            const textMesh = new THREE.Mesh(geometry, textMaterial);
+            textMesh.position.x = (Math.random() - 0.5) * (boxSize - 4);
+            textMesh.position.y = (Math.random() - 0.5) * (boxSize - 4);
+            textMesh.position.z = (Math.random() - 0.5) * (boxSize - 4);
+            textMesh.rotation.y = Math.random() * Math.PI;
+            textMesh.userData.floatSpeed = 0.5 + Math.random() * 0.5;
+            textMesh.userData.rotationSpeed = (Math.random() - 0.5) * 0.005;
+            textGroup.add(textMesh);
+        }
 
-  // Upload modal open
-  addPhotosBtn.addEventListener('click', () => {
-    uploadModal.classList.remove('hidden');
-    const card = uploadModal.querySelector('div');
-    card.classList.remove('opacity-0','scale-95');
-    card.classList.add('opacity-100','scale-100');
-    imageUploadInput.value = null;
-    confirmUploadBtn.classList.add('opacity-50','cursor-not-allowed');
-  });
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            box.rotation.y += 0.001;
+            imageGroup.children.forEach(plane => {
+                const speed = plane.userData.floatSpeed || 0.6;
+                plane.position.y += Math.sin(elapsedTime * speed) * 0.002;
+                plane.rotation.z += plane.userData.rotationSpeed || 0.001;
+            });
+            textGroup.children.forEach(textMesh => {
+                 const speed = textMesh.userData.floatSpeed || 0.6;
+                 textMesh.position.y += Math.sin(elapsedTime * speed) * 0.002;
+                 textMesh.rotation.y += textMesh.userData.rotationSpeed || 0.001;
+            });
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
 
-  imageUploadInput.addEventListener('change', () => {
-    if (imageUploadInput.files && imageUploadInput.files.length === 4) {
-      confirmUploadBtn.classList.remove('opacity-50','cursor-not-allowed');
-    } else {
-      confirmUploadBtn.classList.add('opacity-50','cursor-not-allowed');
-    }
-  });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-  cancelUploadBtn.addEventListener('click', () => {
-    const card = uploadModal.querySelector('div');
-    card.classList.remove('opacity-100','scale-100');
-    card.classList.add('opacity-0','scale-95');
-    setTimeout(()=> uploadModal.classList.add('hidden'), 220);
-  });
+        function onPointerClick(event) {
+            const anyModalOpen = !uploadModal.classList.contains('hidden') || !textModal.classList.contains('hidden') || !shareModal.classList.contains('hidden');
+            if (anyModalOpen) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            pointer.x = (x / rect.width) * 2 - 1;
+            pointer.y = - (y / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(imageGroup.children);
+            if (intersects.length > 0) {
+                const clickedPlane = intersects[0].object;
+                const imageUrl = clickedPlane.userData.url;
+                openChatPanel(imageUrl);
+            }
+        }
+        
+        async function openChatPanel(imageUrl) {
+            chatPanel.classList.remove('hidden', 'scale-0', 'opacity-0');
+            chatPanel.classList.add('flex', 'opacity-100', 'scale-100');
+            chatText.classList.add('hidden');
+            speakBtn.classList.add('hidden');
+            audioPlayer.classList.add('hidden');
+            chatSpinner.classList.remove('hidden');
+            const generatedText = await fetchGeminiTextFromImage(imageUrl);
+            chatText.textContent = generatedText;
+            chatSpinner.classList.add('hidden');
+            chatText.classList.remove('hidden');
+            speakBtn.classList.remove('hidden');
+        }
 
-  confirmUploadBtn.addEventListener('click', async () => {
-    if (!imageUploadInput.files || imageUploadInput.files.length !== 4) return;
-    confirmUploadBtn.textContent = 'Uploading...';
-    confirmUploadBtn.disabled = true;
-    try {
-      const newImages = [];
-      for (const file of imageUploadInput.files) {
-        const base64 = await fileToBase64(file);
-        newImages.push(base64);
-      }
-      const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-      const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-      await setDoc(userRef, { images: newImages, texts: currentTexts }, { merge: true });
-    } catch (err) {
-      console.error('Error uploading images:', err);
-    } finally {
-      confirmUploadBtn.textContent = 'Confirm';
-      confirmUploadBtn.disabled = false;
-      const card = uploadModal.querySelector('div');
-      card.classList.remove('opacity-100','scale-100');
-      card.classList.add('opacity-0','scale-95');
-      setTimeout(()=> uploadModal.classList.add('hidden'), 220);
-    }
-  });
+        function closeChatPanel() {
+            chatPanel.classList.remove('scale-100', 'opacity-100');
+            chatPanel.classList.add('scale-0', 'opacity-0', 'hidden');
+            stopSpeaking();
+        }
 
-  // Text modal
-  addTextsBtn.addEventListener('click', () => {
-    textModal.classList.remove('hidden');
-    const card = textModal.querySelector('div');
-    card.classList.remove('opacity-0','scale-95');
-    card.classList.add('opacity-100','scale-100');
-    textInputs.forEach(i => i.value = '');
-    confirmTextBtn.classList.add('opacity-50','cursor-not-allowed');
-  });
+        function stopSpeaking() {
+            if (audioPlayer && !audioPlayer.paused) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            if (speakBtn) {
+                speakBtn.textContent = '✨ Speak';
+            }
+        }
 
-  textInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      const allFilled = textInputs.every(i => i.value.trim().length > 0);
-      if (allFilled) confirmTextBtn.classList.remove('opacity-50','cursor-not-allowed');
-      else confirmTextBtn.classList.add('opacity-50','cursor-not-allowed');
-    });
-  });
+        async function fetchGeminiTextFromImage(imageUrl) {
+            try {
+                const API_KEY = "";
+                if (!API_KEY) {
+                    return `This is a memory from the past. A beautiful, happy moment.`;
+                }
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const base64ImageData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: "Describe this photo like a memory. Give it a title and a short paragraph." },
+                            { inlineData: { mimeType: blob.type, data: base64ImageData } }
+                        ]
+                    }],
+                };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+                const apiResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await apiResponse.json();
+                return result?.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate a memory for this image.';
+            } catch (error) {
+                console.error("Gemini text generation error:", error);
+                return 'Error generating memory: ' + error.message;
+            }
+        }
 
-  cancelTextBtn.addEventListener('click', () => {
-    const card = textModal.querySelector('div');
-    card.classList.remove('opacity-100','scale-100');
-    card.classList.add('opacity-0','scale-95');
-    setTimeout(()=> textModal.classList.add('hidden'), 220);
-  });
+        async function fetchGeminiAudio(text) {
+            try {
+                const API_KEY = "";
+                if (!API_KEY) {
+                     console.log("No API key provided. Using browser speech synthesis as a fallback.");
+                     return new Blob([new ArrayBuffer(0)], { type: 'audio/wav' });
+                }
+                let response = await fetchWithRetry(async () => {
+                    const payload = {
+                        contents: [{ parts: [{ text: text }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${API_KEY}`;
+                    return fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }, 3);
+                let result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
 
-  confirmTextBtn.addEventListener('click', async () => {
-    const newTexts = textInputs.map(i => i.value.trim());
-    const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-    await setDoc(userRef, { images: currentImages, texts: newTexts }, { merge: true });
-    const card = textModal.querySelector('div');
-    card.classList.remove('opacity-100','scale-100');
-    card.classList.add('opacity-0','scale-95');
-    setTimeout(()=> textModal.classList.add('hidden'), 220);
-  });
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const match = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = match ? parseInt(match[1], 10) : 44100;
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    return wavBlob;
+                } else {
+                    throw new Error("Invalid audio response from API.");
+                }
+            } catch (error) {
+                console.error("Gemini audio generation error:", error);
+                throw new Error("Error fetching audio: " + error.message);
+            }
+        }
+        
+        async function fetchGeminiImage(prompt) {
+            try {
+                const API_KEY = "";
+                if (!API_KEY) {
+                    return `https://placehold.co/400x400/CCCCCC/000000?text=Image+Failed`;
+                }
+                let response = await fetchWithRetry(async () => {
+                    const payload = {
+                        instances: { prompt: prompt },
+                        parameters: { sampleCount: 1 }
+                    };
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+                    return fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }, 3);
 
-  // Remove handlers
-  removePhotosBtn.addEventListener('click', async () => {
-    const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-    await setDoc(userRef, { images: [] }, { merge: true });
-  });
+                let result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+                if (!base64Data) throw new Error('No image data in response.');
+                return `data:image/png;base64,${base64Data}`;
+            } catch (error) {
+                console.error("Image generation failed:", error);
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
+                modal.innerHTML = `<div>Sorry, image generation failed.</div>`;
+                document.body.appendChild(modal);
+                setTimeout(() => modal.remove(), 3000);
+                return 'https://placehold.co/400x400/CCCCCC/000000?text=Image+Failed';
+            }
+        }
+        
+        async function fetchWithRetry(fetcher, retries) {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetcher();
+                    if (response.status !== 429) {
+                        return response;
+                    }
+                } catch (error) {
+                    console.warn(`Fetch attempt ${i + 1} failed:`, error);
+                }
+                if (i < retries) {
+                    await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+                }
+            }
+            throw new Error('All fetch attempts failed.');
+        }
 
-  removeTextsBtn.addEventListener('click', async () => {
-    const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
-    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
-    await setDoc(userRef, { texts: [] }, { merge: true });
-  });
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
 
-  // Share modal
-  shareBtn.addEventListener('click', () => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
-    shareLinkInput.value = shareUrl;
-    shareModal.classList.remove('hidden');
-    const card = shareModal.querySelector('div');
-    card.classList.remove('opacity-0','scale-95');
-    card.classList.add('opacity-100','scale-100');
-    copyStatus.classList.add('hidden');
-  });
+        function pcmToWav(pcm16, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcm16.length * 2);
+            const view = new DataView(buffer);
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm16.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm16.length * 2, true);
+            for (let i = 0; i < pcm16.length; i++) {
+                view.setInt16(44 + i * 2, pcm16[i], true);
+            }
+            return new Blob([view], { type: 'audio/wav' });
+        }
 
-  closeShareModal.addEventListener('click', () => {
-    const card = shareModal.querySelector('div');
-    card.classList.remove('opacity-100','scale-100');
-    card.classList.add('opacity-0','scale-95');
-    setTimeout(()=> shareModal.classList.add('hidden'), 220);
-  });
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
 
-  copyBtn.addEventListener('click', async () => {
-    const text = shareLinkInput.value;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        shareLinkInput.select();
-        document.execCommand('copy');
-      }
-      copyStatus.classList.remove('hidden');
-      setTimeout(()=> copyStatus.classList.add('hidden'), 1800);
-    } catch (err) {
-      console.warn('Copy failed', err);
-    }
-  });
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function initApp() {
+            try {
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+                const firebaseConfig = {
+                    apiKey: "fake-api-key",
+                    authDomain: `${appId}.firebaseapp.com`,
+                    projectId: appId,
+                    storageBucket: `${appId}.appspot.com`,
+                    messagingSenderId: "1234567890",
+                    appId: "1:1234567890:web:abcdef"
+                };
 
-  // Speak button: text -> audio (uses fetchGeminiAudio fallback)
-  speakBtn.addEventListener('click', async () => {
-    if (isSpeaking) {
-      stopSpeaking();
-      return;
-    }
-    try {
-      isSpeaking = true;
-      speakBtn.textContent = 'Stop Speaking';
-      audioBlob = await fetchGeminiAudio(chatText.textContent || chatText.innerText || '');
-      const audioUrl = URL.createObjectURL(audioBlob);
-      audioPlayer.src = audioUrl;
-      audioPlayer.classList.remove('hidden');
-      await audioPlayer.play();
-      audioPlayer.onended = () => stopSpeaking();
-    } catch (err) {
-      console.error('TTS failed:', err);
-      stopSpeaking();
-      const modal = document.createElement('div');
-      modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-      modal.innerHTML = `<div>Sorry, text-to-speech failed to generate audio.</div>`;
-      document.body.appendChild(modal);
-      setTimeout(()=> modal.remove(), 3000);
-    }
-  });
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const sharedUserId = urlParams.get('userId');
 
-  // end module script
-  </script>
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = sharedUserId || auth.currentUser.uid;
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+
+                onSnapshot(userRef, (doc) => {
+                    let images = defaultImages;
+                    let texts = defaultTexts;
+
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        if (data.images && data.images.length > 0) {
+                            images = data.images;
+                        }
+                        if (data.texts && data.texts.length > 0) {
+                            texts = data.texts;
+                        }
+                    }
+                    currentImages = images;
+                    currentTexts = texts;
+                    updateScene(currentImages, currentTexts);
+                    loadingScreen.classList.add('opacity-0');
+                    setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+                }, (error) => {
+                    console.error("Firestore snapshot listener failed:", error);
+                    updateScene(defaultImages, defaultTexts);
+                    loadingScreen.classList.add('opacity-0');
+                    setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+                });
+            } catch (error) {
+                console.error("Error initializing app:", error);
+                loadingScreen.classList.add('opacity-0');
+                setTimeout(() => loadingScreen.classList.add('hidden'), 300);
+            }
+        }
+        
+        window.addEventListener('load', initApp);
+        document.addEventListener('click', onPointerClick);
+        
+        addPhotosBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('hidden', 'opacity-0');
+            uploadModal.classList.add('flex', 'opacity-100', 'scale-100');
+            imageUploadInput.value = null;
+            confirmUploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+        
+        imageUploadInput.addEventListener('change', () => {
+            if (imageUploadInput.files.length === 4) {
+                 confirmUploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                 confirmUploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        cancelUploadBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('opacity-100', 'scale-100');
+            uploadModal.classList.add('opacity-0');
+            setTimeout(() => uploadModal.classList.add('hidden'), 300);
+        });
+        
+        confirmUploadBtn.addEventListener('click', async () => {
+            if (imageUploadInput.files.length !== 4) return;
+            confirmUploadBtn.textContent = 'Uploading...';
+            confirmUploadBtn.disabled = true;
+            try {
+                const newImages = [];
+                for (const file of imageUploadInput.files) {
+                    const base64String = await fileToBase64(file);
+                    newImages.push(base64String);
+                }
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+                await setDoc(userRef, { images: newImages, texts: currentTexts }, { merge: true });
+            } catch (error) {
+                console.error("Error uploading images:", error);
+            } finally {
+                uploadModal.classList.remove('opacity-100', 'scale-100');
+                uploadModal.classList.add('opacity-0');
+                setTimeout(() => uploadModal.classList.add('hidden'), 300);
+                confirmUploadBtn.textContent = 'Confirm';
+                confirmUploadBtn.disabled = false;
+            }
+        });
+
+        addTextsBtn.addEventListener('click', () => {
+            textModal.classList.remove('hidden', 'opacity-0');
+            textModal.classList.add('flex', 'opacity-100', 'scale-100');
+            textInputs.forEach(input => input.value = '');
+        });
+
+        textInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const allFilled = textInputs.every(i => i.value.trim().length > 0);
+                if (allFilled) {
+                    confirmTextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    confirmTextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        });
+
+        cancelTextBtn.addEventListener('click', () => {
+            textModal.classList.remove('opacity-100', 'scale-100');
+            textModal.classList.add('opacity-0');
+            setTimeout(() => textModal.classList.add('hidden'), 300);
+        });
+
+        confirmTextBtn.addEventListener('click', async () => {
+            const newTexts = textInputs.map(input => input.value.trim());
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { images: currentImages, texts: newTexts }, { merge: true });
+            textModal.classList.remove('opacity-100', 'scale-100');
+            textModal.classList.add('opacity-0');
+            setTimeout(() => textModal.classList.add('hidden'), 300);
+        });
+
+        removePhotosBtn.addEventListener('click', async () => {
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { images: [] }, { merge: true });
+        });
+
+        removeTextsBtn.addEventListener('click', async () => {
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { texts: [] }, { merge: true });
+        });
+
+        shareBtn.addEventListener('click', () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
+            shareLinkInput.value = shareUrl;
+            shareModal.classList.remove('hidden', 'opacity-0');
+            shareModal.classList.add('flex', 'opacity-100', 'scale-100');
+            copyStatus.classList.add('hidden');
+        });
+        
+        closeShareModal.addEventListener('click', () => {
+            shareModal.classList.remove('opacity-100', 'scale-100');
+            shareModal.classList.add('opacity-0');
+            setTimeout(() => shareModal.classList.add('hidden'), 300);
+        });
+        
+        copyBtn.addEventListener('click', () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            copyStatus.classList.remove('hidden');
+        });
+
+        let isSpeaking = false;
+        speakBtn.addEventListener('click', async () => {
+            if (isSpeaking) {
+                stopSpeaking();
+                return;
+            }
+            try {
+                isSpeaking = true;
+                speakBtn.textContent = 'Stop Speaking';
+                audioBlob = await fetchGeminiAudio(chatText.textContent);
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayer.src = audioUrl;
+                audioPlayer.classList.remove('hidden');
+                audioPlayer.play();
+                audioPlayer.onended = () => {
+                    stopSpeaking();
+                };
+            } catch (error) {
+                console.error("TTS failed:", error);
+                stopSpeaking();
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
+                modal.innerHTML = `<div>Sorry, text-to-speech failed to generate audio.</div>`;
+                document.body.appendChild(modal);
+                setTimeout(() => modal.remove(), 3000);
+            }
+        });
+    </script>
 </body>
 </html>
