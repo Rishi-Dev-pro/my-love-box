@@ -129,6 +129,13 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let currentImages = [];
+        let currentTexts = [];
+
         const defaultImages = [
             'https://placehold.co/400x400/F4B3C2/FFFFFF?text=Memory+1',
             'https://placehold.co/400x400/A7D8DE/FFFFFF?text=Memory+2',
@@ -143,8 +150,6 @@
         const chatSpinner = document.getElementById('chat-spinner');
         const speakBtn = document.getElementById('speak-btn');
         const audioPlayer = document.getElementById('audio-player');
-        let audioBlob = null;
-        let isSpeaking = false;
         
         const addPhotosBtn = document.getElementById('add-photos-btn');
         const addTextsBtn = document.getElementById('add-texts-btn');
@@ -168,11 +173,6 @@
         const copyBtn = document.getElementById('copy-btn');
         const copyStatus = document.getElementById('copy-status');
         const closeShareModal = document.getElementById('close-share-modal');
-
-        let app;
-        let db;
-        let auth;
-        let userId;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -212,8 +212,6 @@
         const textGroup = new THREE.Group();
         scene.add(imageGroup);
         scene.add(textGroup);
-        let currentTexts = [];
-        let currentImages = [];
 
         function updateScene(images, texts) {
             imageGroup.children.forEach(child => {
@@ -311,7 +309,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        window.addEventListener('click', onPointerClick);
         function onPointerClick(event) {
             pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
             pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
@@ -324,13 +321,43 @@
             }
         }
         
+        async function openChatPanel(imageUrl) {
+            chatPanel.classList.remove('hidden');
+            chatPanel.classList.add('flex', 'scale-100', 'opacity-100');
+            chatText.classList.add('hidden');
+            speakBtn.classList.add('hidden');
+            audioPlayer.classList.add('hidden');
+            chatSpinner.classList.remove('hidden');
+            const generatedText = await fetchGeminiTextFromImage(imageUrl);
+            chatText.textContent = generatedText;
+            chatSpinner.classList.add('hidden');
+            chatText.classList.remove('hidden');
+            speakBtn.classList.remove('hidden');
+        }
+
+        function closeChatPanel() {
+            chatPanel.classList.remove('scale-100', 'opacity-100');
+            chatPanel.classList.add('hidden');
+            stopSpeaking();
+        }
+
+        function stopSpeaking() {
+            if (!audioPlayer.paused) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            speakBtn.textContent = '✨ Speak';
+            isSpeaking = false;
+        }
+
         async function fetchGeminiTextFromImage(imageUrl) {
             try {
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();
-                const base64ImageData = await new Promise(resolve => {
+                const base64ImageData = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
                     reader.readAsDataURL(blob);
                 });
                 const payload = {
@@ -356,22 +383,25 @@
         }
 
         async function fetchGeminiAudio(text) {
+            let isSpeaking = false;
             try {
-                const payload = {
-                    contents: [{ parts: [{ text: text }] }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } }
-                    },
-                    model: "gemini-2.5-flash-preview-tts"
-                };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=`;
-                const apiResponse = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await apiResponse.json();
+                let response = await fetchWithRetry(async () => {
+                    const payload = {
+                        contents: [{ parts: [{ text: text }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=`;
+                    return fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }, 3);
+                let result = await response.json();
                 const part = result?.candidates?.[0]?.content?.parts?.[0];
                 const audioData = part?.inlineData?.data;
                 const mimeType = part?.inlineData?.mimeType;
@@ -393,17 +423,20 @@
         
         async function fetchGeminiImage(prompt) {
             try {
-                const payload = {
-                    instances: { prompt: prompt },
-                    parameters: { sampleCount: 1 }
-                };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=`;
-                const apiResponse = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await apiResponse.json();
+                let response = await fetchWithRetry(async () => {
+                    const payload = {
+                        instances: { prompt: prompt },
+                        parameters: { sampleCount: 1 }
+                    };
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=`;
+                    return fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }, 3);
+
+                let result = await response.json();
                 const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
                 if (!base64Data) throw new Error('No image data in response.');
                 return `data:image/png;base64,${base64Data}`;
@@ -418,6 +451,23 @@
             }
         }
         
+        async function fetchWithRetry(fetcher, retries) {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetcher();
+                    if (response.status !== 429) {
+                        return response;
+                    }
+                } catch (error) {
+                    console.warn(`Fetch attempt ${i + 1} failed:`, error);
+                }
+                if (i < retries) {
+                    await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+                }
+            }
+            throw new Error('All fetch attempts failed.');
+        }
+
         function base64ToArrayBuffer(base64) {
             const binaryString = atob(base64);
             const len = binaryString.length;
@@ -455,90 +505,6 @@
                 view.setUint8(offset + i, string.charCodeAt(i));
             }
         }
-        
-        async function openChatPanel(imageUrl) {
-            chatPanel.classList.remove('hidden');
-            chatPanel.classList.add('flex', 'scale-100', 'opacity-100');
-            chatText.classList.add('hidden');
-            speakBtn.classList.add('hidden');
-            audioPlayer.classList.add('hidden');
-            chatSpinner.classList.remove('hidden');
-            const generatedText = await fetchGeminiTextFromImage(imageUrl);
-            chatText.textContent = generatedText;
-            chatSpinner.classList.add('hidden');
-            chatText.classList.remove('hidden');
-            speakBtn.classList.remove('hidden');
-        }
-
-        function closeChatPanel() {
-            chatPanel.classList.remove('scale-100', 'opacity-100');
-            chatPanel.classList.add('hidden');
-            stopSpeaking();
-        }
-
-        // Event Listeners for UI Buttons
-        document.getElementById('add-photos-btn').addEventListener('click', () => {
-            document.getElementById('upload-modal').classList.remove('hidden', 'opacity-0');
-            document.getElementById('upload-modal').classList.add('flex', 'opacity-100', 'scale-100');
-            document.getElementById('image-upload').value = null;
-        });
-
-        document.getElementById('add-texts-btn').addEventListener('click', () => {
-            document.getElementById('text-modal').classList.remove('hidden', 'opacity-0');
-            document.getElementById('text-modal').classList.add('flex', 'opacity-100', 'scale-100');
-            textInputs.forEach(input => input.value = '');
-        });
-
-        document.getElementById('remove-photos-btn').addEventListener('click', async () => {
-            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { images: [] }, { merge: true });
-        });
-
-        document.getElementById('remove-texts-btn').addEventListener('click', async () => {
-            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { texts: [] }, { merge: true });
-        });
-
-        document.getElementById('share-btn').addEventListener('click', () => {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
-            shareLinkInput.value = shareUrl;
-            shareModal.classList.remove('hidden', 'opacity-0');
-            shareModal.classList.add('flex', 'opacity-100', 'scale-100');
-            copyStatus.classList.add('hidden');
-        });
-
-        document.getElementById('confirm-upload').addEventListener('click', async () => {
-            const files = document.getElementById('image-upload').files;
-            if (files.length !== 4) return;
-            document.getElementById('confirm-upload').textContent = 'Uploading...';
-            document.getElementById('confirm-upload').disabled = true;
-            try {
-                const newImages = [];
-                for (const file of files) {
-                    const base64String = await fileToBase64(file);
-                    newImages.push(base64String);
-                }
-                const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
-                await setDoc(userRef, { images: newImages }, { merge: true });
-            } catch (error) {
-                console.error("Error uploading images:", error);
-            } finally {
-                document.getElementById('upload-modal').classList.remove('opacity-100', 'scale-100');
-                document.getElementById('upload-modal').classList.add('opacity-0');
-                setTimeout(() => document.getElementById('upload-modal').classList.add('hidden'), 300);
-                document.getElementById('confirm-upload').textContent = 'Confirm';
-                document.getElementById('confirm-upload').disabled = false;
-            }
-        });
-
-        document.getElementById('confirm-text').addEventListener('click', async () => {
-            const newTexts = textInputs.map(input => input.value.trim()).filter(text => text.length > 0);
-            const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
-            await setDoc(userRef, { texts: newTexts }, { merge: true });
-            document.getElementById('text-modal').classList.remove('opacity-100', 'scale-100');
-            document.getElementById('text-modal').classList.add('opacity-0');
-            setTimeout(() => document.getElementById('text-modal').classList.add('hidden'), 300);
-        });
 
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
@@ -548,8 +514,8 @@
                 reader.readAsDataURL(file);
             });
         }
-
-        // Application initialization
+        
+        // Final initialization logic
         async function initApp() {
             try {
                 const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
@@ -565,14 +531,18 @@
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-
+                
                 const urlParams = new URLSearchParams(window.location.search);
                 const sharedUserId = urlParams.get('userId');
 
-                await signInAnonymously(auth);
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
 
                 userId = sharedUserId || auth.currentUser.uid;
-                const userRef = doc(db, 'artifacts', userId, 'public', 'data', 'users', userId);
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
 
                 onSnapshot(userRef, (doc) => {
                     let images = defaultImages;
@@ -605,16 +575,146 @@
             }
         }
         
-        // This is a dummy function as we can't show images in Vercel
-        document.getElementById('add-photos-btn').addEventListener('click', () => {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
-            modal.innerHTML = `<div>Sorry, image upload is not supported in this environment.</div>`;
-            document.body.appendChild(modal);
-            setTimeout(() => modal.remove(), 3000);
+        window.addEventListener('load', initApp);
+        window.addEventListener('click', onPointerClick);
+
+        addPhotosBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('hidden', 'opacity-0');
+            uploadModal.classList.add('flex', 'opacity-100', 'scale-100');
+            imageUploadInput.value = null;
+            confirmUploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+        
+        imageUploadInput.addEventListener('change', () => {
+            if (imageUploadInput.files.length === 4) {
+                 confirmUploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                 confirmUploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
         });
 
-        initApp();
+        cancelUploadBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('opacity-100', 'scale-100');
+            uploadModal.classList.add('opacity-0');
+            setTimeout(() => uploadModal.classList.add('hidden'), 300);
+        });
+        
+        confirmUploadBtn.addEventListener('click', async () => {
+            if (imageUploadInput.files.length !== 4) return;
+            confirmUploadBtn.textContent = 'Uploading...';
+            confirmUploadBtn.disabled = true;
+            try {
+                const newImages = [];
+                for (const file of imageUploadInput.files) {
+                    const base64String = await fileToBase64(file);
+                    newImages.push(base64String);
+                }
+                const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+                await setDoc(userRef, { images: newImages, texts: currentTexts }, { merge: true });
+            } catch (error) {
+                console.error("Error uploading images:", error);
+            } finally {
+                uploadModal.classList.remove('opacity-100', 'scale-100');
+                uploadModal.classList.add('opacity-0');
+                setTimeout(() => uploadModal.classList.add('hidden'), 300);
+                confirmUploadBtn.textContent = 'Confirm';
+                confirmUploadBtn.disabled = false;
+            }
+        });
+
+        addTextsBtn.addEventListener('click', () => {
+            textModal.classList.remove('hidden', 'opacity-0');
+            textModal.classList.add('flex', 'opacity-100', 'scale-100');
+            textInputs.forEach(input => input.value = '');
+        });
+
+        textInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const allFilled = textInputs.every(i => i.value.trim().length > 0);
+                if (allFilled) {
+                    confirmTextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    confirmTextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        });
+
+        cancelTextBtn.addEventListener('click', () => {
+            textModal.classList.remove('opacity-100', 'scale-100');
+            textModal.classList.add('opacity-0');
+            setTimeout(() => textModal.classList.add('hidden'), 300);
+        });
+
+        confirmTextBtn.addEventListener('click', async () => {
+            const newTexts = textInputs.map(input => input.value.trim());
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { images: currentImages, texts: newTexts }, { merge: true });
+            textModal.classList.remove('opacity-100', 'scale-100');
+            textModal.classList.add('opacity-0');
+            setTimeout(() => textModal.classList.add('hidden'), 300);
+        });
+
+        removePhotosBtn.addEventListener('click', async () => {
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { images: [] }, { merge: true });
+        });
+
+        removeTextsBtn.addEventListener('click', async () => {
+            const appId = 'f452813c-746a-4b95-a16f-12c8b7c7b8c6';
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+            await setDoc(userRef, { texts: [] }, { merge: true });
+        });
+
+        shareBtn.addEventListener('click', () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?userId=${userId}`;
+            shareLinkInput.value = shareUrl;
+            shareModal.classList.remove('hidden', 'opacity-0');
+            shareModal.classList.add('flex', 'opacity-100', 'scale-100');
+            copyStatus.classList.add('hidden');
+        });
+        
+        closeShareModal.addEventListener('click', () => {
+            shareModal.classList.remove('opacity-100', 'scale-100');
+            shareModal.classList.add('opacity-0');
+            setTimeout(() => shareModal.classList.add('hidden'), 300);
+        });
+        
+        copyBtn.addEventListener('click', () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            copyStatus.classList.remove('hidden');
+        });
+
+        speakBtn.addEventListener('click', async () => {
+            let isSpeaking = false;
+            if (isSpeaking) {
+                stopSpeaking();
+                return;
+            }
+            try {
+                isSpeaking = true;
+                speakBtn.textContent = 'Stop Speaking';
+                audioBlob = await fetchGeminiAudio(chatText.textContent);
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayer.src = audioUrl;
+                audioPlayer.classList.remove('hidden');
+                audioPlayer.play();
+                audioPlayer.onended = () => {
+                    stopSpeaking();
+                };
+            } catch (error) {
+                console.error("TTS failed:", error);
+                stopSpeaking();
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-red-100 text-red-700 flex items-center justify-center z-50';
+                modal.innerHTML = `<div>Sorry, text-to-speech failed to generate audio.</div>`;
+                document.body.appendChild(modal);
+                setTimeout(() => modal.remove(), 3000);
+            }
+        });
     </script>
 </body>
 </html>
